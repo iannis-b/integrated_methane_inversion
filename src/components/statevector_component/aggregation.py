@@ -147,18 +147,26 @@ def get_highest_labels_threshold(labels, sensitivities, threshold):
     # If `sensitivities` is a DataArray, numpy-style indexing, as implemented
     # in the following loop (`sensitivities[indices]`), will be interpreted as orthogonal indexing,
     # which is DataArray’s default behavior. This would produce inflated clusters.
-    if hasattr(sensitivities, "values"):
-        sensitivities = sensitivities.values
+    print(f'Sensitivites class: {sensitivities.__class__}')
+    #if hasattr(sensitivities, "values"):
+    #     sensitivities = sensitivities.values
 
     sensitivity_dict = {}
     max_label = int(np.nanmax(labels))
     n = 0
     number_of_elements = []
     total_sensis = []
+
+    # Make a test print, once per call
+    printed_once = False
     # calculate avg dofs per gridcell for each cluster
     for i in range(1, max_label + 1):
         indices = np.where(labels == i)
         cluster_sensitivities = sensitivities[indices]
+        if not printed_once:
+            print(cluster_sensitivities)
+            printed_once = True
+
         num_ind = cluster_sensitivities.size
         total_sensi = np.sum(cluster_sensitivities)
         # avg_sensi = total_sensi / num_ind
@@ -645,6 +653,8 @@ def update_sv_clusters(config, flat_sensi, orig_sv):
 
         # get the n_highes labels with sensitivities above the
         # threshold and how many elements these labels contain
+
+        print("Agg level: ", agg_level)
         n_max_labels, n_highest, num_elements, _ = get_highest_labels_threshold(
             out_labels, sensi["Sensitivities"], filter_threshold
         )
@@ -691,25 +701,25 @@ def update_sv_clusters(config, flat_sensi, orig_sv):
 
         # Recalibrate dofs_threshold for the next iteration based on the DOFS
         # and cluster slots that remain after this iteration's assignments.
-        if  auto_threshold and labels_assigned_since_last_threshold:
-            clusters_left = desired_num_labels - int(labels.max())
-            if clusters_left > 0:
-                remaining_dofs = float(
-                    sensi["Sensitivities"].where(labels == 0).sum()
-                )
-
-                dofs_threshold = remaining_dofs / clusters_left
-                print(f"Updated target DOFS per cluster (ClusteringThreshold): {dofs_threshold}")
-
-                if dofs_threshold > 1:
-                    msg = (
-                        f"Estimated dofs per element too high ({dofs_threshold}), "
-                        "resetting ClusteringThreshold to 1"
-                    )
-                    print(msg)
-                    dofs_threshold = 1
-
-                labels_assigned_since_last_threshold = False
+        # if  auto_threshold and labels_assigned_since_last_threshold:
+        #     clusters_left = desired_num_labels - int(labels.max())
+        #     if clusters_left > 0:
+        #         remaining_dofs = float(
+        #             sensi["Sensitivities"].where(labels == 0).sum()
+        #         )
+        #
+        #         dofs_threshold = remaining_dofs / clusters_left
+        #         print(f"Updated target DOFS per cluster (ClusteringThreshold): {dofs_threshold}")
+        #
+        #         if dofs_threshold > 1:
+        #             msg = (
+        #                 f"Estimated dofs per element too high ({dofs_threshold}), "
+        #                 "resetting ClusteringThreshold to 1"
+        #             )
+        #             print(msg)
+        #             dofs_threshold = 1
+        #
+        #         labels_assigned_since_last_threshold = False
 
     # scale buffer elements to correct label range
     cluster_number_diff = last_ROI_element - int(labels.max())
